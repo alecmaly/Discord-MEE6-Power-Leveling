@@ -49,10 +49,6 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    SLEEP_TIME_SECONDS = 1                                                                      # Default MEE6 xp time
-    MAX_SLEEP_TIME_SECONDS = int(args.max_sleep_time) if args.max_sleep_time else 60*60         # 60*60 = 60sec/min * 60min/hr = 1 hr sleep time
-    WORDLIST_MSG_DEFAULT = '.'
-
     print("""\n\n**************STARTING BOT**************""")
     print(args)
     print(f"Channel: {args.channel_id}")
@@ -67,6 +63,14 @@ if __name__ == '__main__':
         'content-type': 'application/json',
         'accept': 'application/json'
     }
+
+    # get timeout for channel    
+    resp = requests.get(f"https://discord.com/api/v9/channels/{args.channel_id}", headers=headers)
+    channel_data = json.loads(resp.text)
+
+    # set script vars
+    MAX_SLEEP_TIME_SECONDS = int(args.max_sleep_time) if args.max_sleep_time else 60*60              # 60*60 = 60sec/min * 60min/hr = 1 hr sleep time
+    WORDLIST_MSG_DEFAULT = '.'
 
     # load wordlist
     if args.message_wordlist and exists(args.message_wordlist):
@@ -90,7 +94,7 @@ if __name__ == '__main__':
                 raise Exception("Did not receive 200 response from server, pausing.")
             print(f"{i+1} Messages Sent")
 
-            SLEEP_TIME_SECONDS = 1
+            SLEEP_TIME_SECONDS = int(channel_data['rate_limit_per_user']) if 'rate_limit_per_user' in channel_data else 1        # Default MEE6 xp time
             time.sleep(SLEEP_TIME_SECONDS)
 
             DeleteMessage(channel=args.channel_id, msgId=resp_data['id'])
